@@ -71,3 +71,24 @@ left_join(precip_df, month_df, by = "month")
 This dataset contains information from the Mr. Trashwheel Trash Collector in Baltimore, MD. As trash enters the inner harbor, the trashwheel collects that trash and stores it in a dumpster. The dataset contains information on year, month, and trash collected, including some specific kinds of trash. There are a total of `r nrow(trashwheel_df)` rows in our final dataset. Additional data sheets include monthly precipitation data. 
 
 
+## Problem 2
+
+Read the NYC Transit dataset. 
+
+```{r}
+transit_df = 
+  read_csv(
+    "./data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv") %>% 
+  janitor::clean_names() %>% 
+  select(line:entry, vending, ada) 
+
+```
+
+This dataset contains information on each entry and exit to and from the NYC Transit subway system. I have narrowed the dataset to only include the variables `r names(transit_df)`. The dataset now includes `r nrow(transit_df)` rows and `r ncol(transit_df)`. I have cleaned the names to snake case and have changed the variable 'entry' from a character vector to a logical vector. These data are not yet tidy, since the route1-route11 column names contain information that should be listed in rows. 
+
+Answer questions about the dataset. 
+
+```{r}
+distinct(transit_df, station_name)
+```
+
