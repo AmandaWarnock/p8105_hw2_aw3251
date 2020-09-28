@@ -68,7 +68,7 @@ left_join(precip_df, month_df, by = "month")
 ```
 
 
-This dataset contains information from the Mr. Trashwheel Trash Collector in Baltimore, MD. As trash enters the inner harbor, the trashwheel collects that trash and stores it in a dumpster. The dataset contains information on year, month, and trash collected, including some specific kinds of trash. There are a total of `r nrow(trashwheel_df)` rows in our final dataset. Additional data sheets include monthly precipitation data. 
+This dataset contains information from the Mr. Trashwheel Trash Collector in Baltimore, MD. As trash enters the inner harbor, the trashwheel collects that trash and stores it in a dumpster. The dataset contains information on year, month, and trash collected, including some specific kinds of trash. There are a total of `r nrow(trashwheel_df)` rows in our final dataset. Additional data sheets include monthly precipitation data. The median number of sports balls found in a dumpster in 2017 was `r trashwheel_df %>% filter(year == 2017) %>% pull(sports_balls) %>% median()`. The total precipitation in 2018 was `r precip_df %>% filter(year == 2018) %>% pull(total) %>% sum()` inches.
 
 
 ## Problem 2
@@ -97,17 +97,39 @@ filter(transit_df, ada == TRUE) %>%
   distinct(line, station_name) %>% 
   count()
 
+filter(transit_df, vending =='NO' & entry == TRUE) %>% 
+  count()
 
-count(transit_df, vending == 'NO')
+filter(transit_df, vending == 'NO') %>% 
+  count()
 ```
 
-There are `r count(distinct(transit_df, line, station_name))` distinct stations. `r filter(transit_df, ada == TRUE) %>% distinct(line, station_name) %>% count()` stations are ADA compliant. 
+There are `r count(distinct(transit_df, line, station_name))` distinct stations. `r filter(transit_df, ada == TRUE) %>% distinct(line, station_name) %>% count()` stations are ADA compliant. Out of `r filter(transit_df, vending == 'NO') %>% count()` stations without vending, `r filter(transit_df, vending =='NO' & entry == TRUE) %>% count()` stations allow entry. 
+
+Create a tidy form of the route names and route numbers 
 
 ```{r}
-transit_df %>% 
-  mutate_at(vars(route1:route11), replace_na, 'None') 
+transit_tidy =
+  transit_df %>%
+  mutate_at(vars(route1:route11), as.character) %>%
+  pivot_longer(
+    route1:route11,
+    names_to = "route_name",
+    names_prefix = "route",
+    values_to = "route_number") %>%
+  drop_na(route_number)
 ```
 
+Answering questions about the distinct stations.
+```{r}
+filter(transit_tidy, route_number == "A") %>% 
+  count()
+
+filter(transit_tidy, route_number == "A" & ada == TRUE) %>% 
+  count()
+```
+
+`r filter(transit_tidy, route_number == "A") %>% count()` distinct stations serve the A. Of these, `r filter(transit_tidy, route_number == "A" & ada == TRUE) %>% count()` are ADA compliant.
 
 ## Problem 3
 
@@ -134,5 +156,18 @@ pols_df =
 
 
 select(pols_df, -day)
+```
+
+Cleaning data in snp.csv. 
+
+```{r}
+snp_df = 
+  read.csv("./data/snp.csv") %>% 
+  separate(date, into = c("month", "day", "year"), sep = "/") %>% 
+  mutate(year = as.integer(year)) %>% 
+  mutate(month = as.integer(month)) %>% 
+  mutate(day = as.integer(day)) 
+
+
 ```
 
