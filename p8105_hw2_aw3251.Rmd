@@ -86,7 +86,7 @@ transit_df =
 
 ```
 
-This dataset contains information on each entry and exit to and from the NYC Transit subway system. I have narrowed the dataset to only include the variables `r names(transit_df)`. The dataset now includes `r nrow(transit_df)` rows and `r ncol(transit_df)`. I have cleaned the names to snake case and have changed the variable 'entry' from a character vector to a logical vector. These data are not yet tidy, since the route1-route11 column names contain information that should be listed in rows. 
+This dataset contains information on each entry and exit to and from the NYC Transit subway system. I have narrowed the dataset to only include the variables `r names(transit_df)`. The dataset now includes `r nrow(transit_df)` rows and `r ncol(transit_df)` columns. I have cleaned the names to snake case and have changed the variable 'entry' from a character vector to a logical vector. These data are not yet tidy, since the route1-route11 column names contain information that should be listed in rows. 
 
 Answer questions about the dataset. 
 
@@ -106,7 +106,7 @@ filter(transit_df, vending == 'NO') %>%
 
 There are `r count(distinct(transit_df, line, station_name))` distinct stations. `r filter(transit_df, ada == TRUE) %>% distinct(line, station_name) %>% count()` stations are ADA compliant. Out of `r filter(transit_df, vending == 'NO') %>% count()` stations without vending, `r filter(transit_df, vending =='NO' & entry == TRUE) %>% count()` stations allow entry. 
 
-Create a tidy form of the route names and route numbers 
+Create a tidy form of the route names and route numbers. 
 
 ```{r}
 transit_tidy =
@@ -121,6 +121,7 @@ transit_tidy =
 ```
 
 Answering questions about the distinct stations.
+
 ```{r}
 filter(transit_tidy, route_number == "A") %>% 
   count()
@@ -130,6 +131,7 @@ filter(transit_tidy, route_number == "A" & ada == TRUE) %>%
 ```
 
 `r filter(transit_tidy, route_number == "A") %>% count()` distinct stations serve the A. Of these, `r filter(transit_tidy, route_number == "A" & ada == TRUE) %>% count()` are ADA compliant.
+
 
 ## Problem 3
 
@@ -150,12 +152,20 @@ month_df =
     month_name = month.name) %>% 
   mutate(month = as.integer(month))
   
-
 pols_df = 
   left_join(pols_df, month_df, by = "month")
 
+pols_df = relocate(pols_df, prez_dem, .after = prez_gop)
+  
+pols_tidy =
+  pivot_longer(
+    pols_df,
+    prez_gop:prez_dem,
+    names_to = "president",
+    values_to = "president_value") %>% 
+  mutate(president = recode(president, prez_gop = "gop", prez_dem = "dem"))
 
-select(pols_df, -day)
+select(pols_df, -day, -prez_dem, -prez_gop)
 ```
 
 Cleaning data in snp.csv. 
@@ -168,6 +178,41 @@ snp_df =
   mutate(month = as.integer(month)) %>% 
   mutate(day = as.integer(day)) 
 
+snp_df = 
+  left_join(snp_df, month_df, by = "month")
+
+snp_df = relocate(snp_df, year, .before = month)
 
 ```
 
+Tidy the unemployment data. 
+
+```{r}
+unemployment_df = 
+  read.csv("./data/unemployment.csv") 
+
+unemploy_tidy = 
+  pivot_longer(
+    unemployment_df,
+    Jan:Dec,
+    names_to = "month_name",
+    values_to = "percent") %>% 
+  mutate(month_name = month.name[as.factor(month_name)]) %>% 
+  mutate(month_name = recode(month_name, January = "1", February = "2", March = "3", April = "4", May = "5", June = "6", July = "7", August = "8", September = "9", October = "10", November = "11", December = "12")) %>% 
+  mutate(month_name = as.integer(month_name)) %>%
+  rename("month" = "month_name") %>% 
+  rename("year" = "Year")
+
+```
+
+Join datasets.
+
+```{r}
+Combine_df = 
+  left_join(pols_tidy, snp_df, by = "month", "year")
+
+final_df = 
+  left_join(Combine_df, unemploy_tidy, by = "month", "year") 
+```
+
+This final dataset was created by merging data from pols-month.csv, which contains data on the number of national politicians by party over time, snp.csv, which contains data on the Standard & Poor's stock market index, and unemployment.csv, which contains data on percent unemployment by month over time. The final dataset has `r nrow(final_df)` rows and `r ncol(final_df)` columns. The years included are between `r range(pull(final_df, year.x))`. Variables in the set are: `r names(final_df)`. 
